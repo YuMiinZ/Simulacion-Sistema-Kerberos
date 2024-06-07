@@ -54,15 +54,6 @@ def generate_rsa_keys(directory, name):
     print("Key pair for", name)
 
 
-def generate_aes_keys(directory, name):
-    secret_key = os.urandom(24)  # 24 bytes = 192 bits
-
-    with open(os.path.join(directory, f"{name}.key"), 'wb') as f:
-        f.write(secret_key)
-
-    print("Secret key for", name, directory)
-
-
 for dir in directories.values():
     if not os.path.exists(dir):
         os.makedirs(dir)
@@ -71,7 +62,3 @@ for dir in directories.values():
 generate_rsa_keys(directories["AS"], "as")
 generate_rsa_keys(directories["TGS"], "tgs")
 generate_rsa_keys(directories["SS"], "ss")
-
-# Generar las llaves secretas compartidas (SS -> TGS y TGS -> SA)
-generate_aes_keys(directories["SS"], "K_S" )
-generate_aes_keys(directories["TGS"], "K_TGS")
