@@ -293,3 +293,41 @@ class SS_To_Client:
         data = json.loads(json_str)
         return cls(string_base64_to_bytes(data["msg_h"]), data["error"])
     
+
+class TGS_To_AS:
+    def __init__(self, encrypted_key:bytes, source:str = "SS"):
+        self.encrypted_key = encrypted_key
+        self.source = source
+
+    def to_json(self):
+        return json.dumps({
+            "encrypted_key": bytes_to_string_base64(self.encrypted_key),
+            "source": self.source
+        })
+    
+    def to_bytes(self):
+        return self.to_json().encode()
+
+    @classmethod
+    def from_json(cls, json_str):
+        data = json.loads(json_str)
+        return cls(string_base64_to_bytes(data["encrypted_key"]), data["source"])
+    
+class SS_To_TGS:
+    def __init__(self, encrypted_key:bytes, source:str = "SS"):
+        self.encrypted_key = encrypted_key
+        self.source = source
+
+    def to_json(self):
+        return json.dumps({
+            "encrypted_key": bytes_to_string_base64(self.encrypted_key),
+            "source": self.source
+        })
+    
+    def to_bytes(self):
+        return self.to_json().encode()
+
+    @classmethod
+    def from_json(cls, json_str):
+        data = json.loads(json_str)
+        return cls(string_base64_to_bytes(data["encrypted_key"]), data["source"])

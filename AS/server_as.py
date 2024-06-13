@@ -87,7 +87,7 @@ def handle_client(conn, addr):
 
         if parsed_data["source"] == 'TGS':  # Mensaje de clave del servidor TGS
             print("Recibido mensaje de clave del servidor TGS")
-            secret_key = decrypt_key(message_data)
+            secret_key = decrypt_key(parsed_data["encrypted_key"])
             storage_key(secret_key)
             print("Llave secreta guardada en AS\n\n")
             
