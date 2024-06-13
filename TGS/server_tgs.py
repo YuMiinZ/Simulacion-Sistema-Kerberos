@@ -34,7 +34,7 @@ def storage_key(secret_key):
     with open(os.path.join("./", f"K_TGS.key"), 'wb') as f:
         f.write(secret_key)
 
-def handle_from_client(parsed_data, addr) -> str:
+def handle_from_client(parsed_data) -> str:
     print("Recibido mensaje del cliente:", parsed_data)
 
     client_to_tgs = Client_To_TGS.from_json(parsed_data)
@@ -59,9 +59,9 @@ def handle_from_client(parsed_data, addr) -> str:
 
     if msg_b.client_id != msg_d.client_id:
         return Error("ID de cliente no coincide en mensaje B y D").to_json()
-    
+    # TODO : validar validity y ttl en c y d
     # !!! acá no sé de donde se extrae el client_id, addr y ttl
-    msg_e = Msg_E(create_session_key(), msg_b.client_id, msg_b.address, msg_b.ttl)
+    msg_e = Msg_E(create_session_key(), msg_b.client_id, msg_b.address, msg_b.ttl) # TODO : crear un nuevo validity, NO TOMAR EL DE MSG B
 
     msg_f = Msg_F(msg_e.client_server_key)
 
@@ -91,7 +91,7 @@ def handle_client(conn, addr) -> str:
             print("Llave secreta guardada en TGS\n\n")
 
         elif parsed_data["source"] == 'client':  # Mensaje del cliente
-            return handle_from_client(parsed_data, addr)
+            return handle_from_client(parsed_data)
 
     except Exception as e:
         print(f"Error al procesar el mensaje: {e}")

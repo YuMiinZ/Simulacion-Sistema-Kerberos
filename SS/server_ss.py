@@ -16,7 +16,7 @@ def handle_from_client(parsed_data) -> str:
     msg_e = Msg_E.from_json(msg_e_decrypted)
 
     msg_g_encrypted = client_to_ss.msg_g
-
+    # TODO : validar validity y ttl en g y e
     msg_g_decrypted = aes_decrypt_message(msg_e.client_server_key, msg_g_encrypted)
 
     msg_g = Msg_G.from_json(msg_g_decrypted)
@@ -26,20 +26,20 @@ def handle_from_client(parsed_data) -> str:
         ss_to_client.error = "ID de cliente no coincide en mensaje G y E"
         return ss_to_client.to_json()
     
-    msg_h = Msg_H(msg_e.ttl)
+    msg_h = Msg_H(msg_g.ttl)
 
     msg_h_encrypted = aes_encrypt_message(msg_e.client_server_key, msg_h.to_bytes())
-
+    # TODO : print for handshake, msg_e
     return SS_To_Client(msg_h_encrypted).to_json()
 
 def handle_service(parsed_data) -> str:
     request_service = Request_Service.from_json(parsed_data)
     response_service = Response_Service()
-    if request_service.service_name == "sumas":
+    if request_service.service == "sumas":
         response_service.resultado = "servicio de sumas"
-    elif request_service.service_name == "restas":
+    elif request_service.service == "restas":
         response_service.resultado = "servicio de restas"
-    elif request_service.service_name == "multiplicaciones":
+    elif request_service.service == "multiplicaciones":
         response_service.resultado = "servicio de multiplicaciones"
     else:
         response_service.error = "Servicio no encontrado"

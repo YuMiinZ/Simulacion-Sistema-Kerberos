@@ -4,6 +4,7 @@ Se puede eliminar o ajustar según sus necesidades...
 """
 
 import socket, datetime as dt
+from datetime import datetime
 import sys
 sys.path.append('../Simulacion-Sistema-Kerberos')
 from DTOS.dtos import *
@@ -103,7 +104,9 @@ class Cliente:
         msg_h = Msg_H.from_json(msg_h_encrypted)
 
         # verifica que los ttl sean iguales
-        return msg_g.ttl == msg_h.ttl 
+        # TODO: revisar porque g viene como datetime y h como stirng
+        h_datetime = datetime.strptime(msg_h.ttl, '%Y-%m-%dT%H:%M:%S.%f')
+        return msg_g.ttl == h_datetime
     
     def programa_7 (self, nombre_del_servicio : str) -> Response_Service:
         request_service = Request_Service(nombre_del_servicio)

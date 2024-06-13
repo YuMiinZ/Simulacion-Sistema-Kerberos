@@ -32,7 +32,8 @@ while True :
         resultado = cliente.programa_7(service_name)
 
         print(f"Resultado del servicio {service_name}: {resultado.resultado}")
-
+        # TODO : no terminar el ciclo
+        # TODO : permiter seguir solicitando servicios y que valide el ttl del request
 
     except Exception as e:
         print(f"Error al procesar el mensaje: {e}")
