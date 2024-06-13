@@ -86,13 +86,17 @@ class Cliente:
 
         return Client_To_SS(msg_e_encrypted, msg_g_encrypted), msg_f, msg_g
     
-    def programa_5 (self, client_to_server: Client_To_SS, msg_f: Msg_F, msg_g: Msg_G) -> bool :
+    def programa_5 (self, client_to_server: Client_To_SS, msg_f: Msg_F, msg_g: Msg_G) -> SS_To_Client :
         response_from_server = self.send_to_server(self.servers["ss"], client_to_server.to_json())
 
         ss_to_client = SS_To_Client.from_json(response_from_server)
 
         if ss_to_client.error:
             raise Exception(ss_to_client.error)
+        
+        return ss_to_client
+    
+    def programa_6 (self, msg_g: Msg_G, msg_f: Msg_F, ss_to_client : SS_To_Client) -> bool:
 
         msg_h_encrypted = aes_decrypt_message(msg_f.client_server_key, ss_to_client.msg_h)
 
@@ -100,3 +104,19 @@ class Cliente:
 
         # verifica que los ttl sean iguales
         return msg_g.ttl != msg_h.ttl 
+    
+    def programa_7 (self, nombre_del_servicio : str) -> Response_Service:
+        request_service = Request_Service(nombre_del_servicio)
+
+        response_from_server = self.send_to_server(self.servers["ss"], request_service.to_json())
+
+        response_service = Response_Service.from_json(response_from_server)
+
+        if response_service.error:
+            raise Exception(response_service.error)
+        
+        return response_service
+
+
+        return ""
+

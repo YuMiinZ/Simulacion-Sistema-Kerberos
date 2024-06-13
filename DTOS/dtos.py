@@ -330,3 +330,38 @@ class SS_To_TGS:
     def from_json(cls, json_str):
         data = json.loads(json_str)
         return cls(string_base64_to_bytes(data["encrypted_key"]), data["source"])
+    
+class Request_Service:
+    
+    def __init__(self, service:str, source:str = "servicio"):
+        self.service = service
+        self.source = source
+
+    def to_json(self):
+        return json.dumps({
+            "service": self.service,
+            "source": self.source,
+        })
+    
+    def to_bytes(self):
+        return self.to_json().encode()
+
+    @classmethod
+    def from_json(cls, data):
+        return cls(data["service"], data["source"])
+    
+class Response_Service:
+    def __init__(self, resultado:str = "", error:str = ""):
+        self.resultado = resultado
+        self.error = error
+
+    def to_json(self):
+        return json.dumps({
+            "resultado": self.resultado,
+            "error": self.error
+        })
+
+    @classmethod
+    def from_json(cls, json_str):
+        data = json.loads(json_str)
+        return cls(data["resultado"], data["error"])
