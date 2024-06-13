@@ -240,7 +240,7 @@ class Msg_G:
         return cls(data["client_id"],data["ttl"])    
     
 
-class Client_To_Server:
+class Client_To_SS:
     def __init__(self, msg_e: bytes, msg_g: bytes):
         self.msg_e = msg_e
         self.msg_g = msg_g
@@ -254,8 +254,7 @@ class Client_To_Server:
         })
     
     @classmethod
-    def from_json(cls, json_str):
-        data = json.loads(json_str)
+    def from_json(cls, data):
         return cls(string_base64_to_bytes(data["msg_e"]), string_base64_to_bytes(data["msg_g"]), data["source"])
     
 

@@ -20,9 +20,9 @@ while True :
 
         tgs_to_client = cliente.programa_3(client_to_tgs)
 
-        client_to_server, msg_f, msg_g = cliente.programa_4(msg_a, tgs_to_client, nueva_fecha_hora)
+        client_to_ss, msg_f, msg_g = cliente.programa_4(msg_a, tgs_to_client, nueva_fecha_hora)
 
-        done = cliente.programa_5(client_to_server, msg_f, msg_g)
+        done = cliente.programa_5(client_to_ss, msg_f, msg_g)
 
 
     except Exception as e:

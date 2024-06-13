@@ -71,7 +71,7 @@ class Cliente:
 
         return tgs_to_client
     
-    def programa_4 (self, msg_a: Msg_A, tgs_to_client: TGS_To_Client, nueva_fecha_hora: datetime) -> Tuple[Client_To_Server, Msg_F, Msg_G]:
+    def programa_4 (self, msg_a: Msg_A, tgs_to_client: TGS_To_Client, nueva_fecha_hora: datetime) -> Tuple[Client_To_SS, Msg_F, Msg_G]:
         msg_f_decrypted = aes_decrypt_message(msg_a.client_tgs_key, tgs_to_client.msg_f)
 
         msg_f = Msg_F.from_json(msg_f_decrypted)
@@ -84,9 +84,9 @@ class Cliente:
 
         msg_g_encrypted = aes_encrypt_message(msg_f.client_server_key, msg_g.to_bytes())
 
-        return Client_To_Server(msg_e_encrypted, msg_g_encrypted), msg_f, msg_g
+        return Client_To_SS(msg_e_encrypted, msg_g_encrypted), msg_f, msg_g
     
-    def programa_5 (self, client_to_server: Client_To_Server, msg_f: Msg_F, msg_g: Msg_G) -> bool :
+    def programa_5 (self, client_to_server: Client_To_SS, msg_f: Msg_F, msg_g: Msg_G) -> bool :
         response_from_server = self.send_to_server(self.servers["ss"], client_to_server.to_json())
 
         ss_to_client = SS_To_Client.from_json(response_from_server)
