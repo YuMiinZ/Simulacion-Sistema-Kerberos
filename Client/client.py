@@ -116,7 +116,3 @@ class Cliente:
             raise Exception(response_service.error)
         
         return response_service
-
-
-        return ""
-
