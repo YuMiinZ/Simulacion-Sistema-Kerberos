@@ -1,0 +1,1 @@
+- [ ] probar que las llaves se pasen de ss a tgs, y tgs a as

@@ -16,11 +16,11 @@ while True :
 
         as_to_client = cliente.programa_1(user_id)
 
-        client_to_tgs, nueva_fecha_hora = cliente.programa_2(as_to_client, service_name)
+        client_to_tgs, nueva_fecha_hora, msg_a = cliente.programa_2(as_to_client, service_name)
 
         tgs_to_client = cliente.programa_3(client_to_tgs)
 
-        client_to_server, msg_f, msg_g = cliente.programa_4(as_to_client.msg_a, tgs_to_client, nueva_fecha_hora)
+        client_to_server, msg_f, msg_g = cliente.programa_4(msg_a, tgs_to_client, nueva_fecha_hora)
 
         done = cliente.programa_5(client_to_server, msg_f, msg_g)
 

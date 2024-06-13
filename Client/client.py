@@ -20,7 +20,7 @@ class Cliente:
             "ss": ('localhost', 8002)
         }
 
-    def send_to_server(server_address, message:str):
+    def send_to_server(self, server_address, message:str):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             client_socket.connect(server_address)
             client_socket.sendall(message.encode())
@@ -39,12 +39,12 @@ class Cliente:
         
         return as_to_client
     
-    def programa_2(self, as_to_client: AS_To_Client, service_name : str) -> Tuple[Client_To_TGS, datetime]:
+    def programa_2(self, as_to_client: AS_To_Client, service_name : str) -> Tuple[Client_To_TGS, datetime, Msg_A]:
          # acá utilizo el K_C.key para desencriptar la session key
         k_c = read_key("Client/K_C.key")
         # TODO : hacer un ejemplo donde k_c del cliente y del AS sean diferentes
-        msg_a_bytes = aes_decrypt_message(k_c, as_to_client.msg_a)
-        msg_a = Msg_A.from_json(msg_a_bytes)
+        msg_a_decrypted = aes_decrypt_message(k_c, as_to_client.msg_a)
+        msg_a = Msg_A.from_json(msg_a_decrypted)
 
         # ??? ¿qué se hace con el service_name?
         msg_c = MsgC(service_name, as_to_client.msg_b)
@@ -59,7 +59,7 @@ class Cliente:
 
         encrypted_message_d = aes_encrypt_message(msg_a.client_tgs_key, msg_d.to_bytes())
 
-        return Client_To_TGS(msg_c, encrypted_message_d), nueva_fecha_hora
+        return Client_To_TGS(msg_c, encrypted_message_d), nueva_fecha_hora, msg_a
     
     def programa_3(self, client_to_tgs: Client_To_TGS) -> TGS_To_Client:
         responseFromTGS = self.send_to_server(self.servers["tgs"], client_to_tgs.to_json())
@@ -80,7 +80,7 @@ class Cliente:
 
         # ??? no estoy seguro de este nueva_fecha_hora, de donde voy tomando el ttl y el client_id?
         # no sé si se guarda en una base de datos
-        msg_g = Msg_G(self.cliend_id, nueva_fecha_hora)
+        msg_g = Msg_G(self.client_id, nueva_fecha_hora)
 
         msg_g_encrypted = aes_encrypt_message(msg_f.client_server_key, msg_g.to_bytes())
 

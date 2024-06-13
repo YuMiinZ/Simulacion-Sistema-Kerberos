@@ -50,7 +50,9 @@ def handle_from_client(parsed_data, addr) -> str:
     user_id = parsed_data["user_id"]
 
     if not user_id in users:
-        return Error("Usuario no autorizado").to_json()
+        error = AS_To_Client()
+        error.error = "from as : Usuario no autorizado"
+        return error.to_json()
     
     k_c = read_key("AS/K_C.key")
 
@@ -93,9 +95,10 @@ def handle_client(conn, addr):
             return handle_from_client(parsed_data, addr)
 
     except Exception as e:
-        print(f"Error al procesar el mensaje: {e}")
-        return json.dumps({"error": str(e)})
-
+        error = AS_To_Client()
+        error.error = f"from as : {e}"
+        return error.to_json()
+    
 def start_server():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.bind(('localhost', 8000))

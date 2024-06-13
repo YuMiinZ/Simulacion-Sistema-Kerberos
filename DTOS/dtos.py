@@ -69,10 +69,10 @@ class Msg_B:
     
 
 class AS_To_Client:
-    def __init__(self, msg_a:bytes, msg_b:bytes):
+    def __init__(self, msg_a:bytes = b'', msg_b:bytes = b'', error:str = ""):
         self.msg_a = msg_a
         self.msg_b = msg_b
-        self.error = ""
+        self.error = error
 
     def to_json(self):
         return json.dumps({
@@ -84,7 +84,11 @@ class AS_To_Client:
     @classmethod
     def from_json(cls, json_str):
         data = json.loads(json_str)
-        return cls(string_base64_to_bytes(data["msg_a"]), string_base64_to_bytes(data["msg_b"]), data["error"])
+        return cls(
+            string_base64_to_bytes(data["msg_a"]),
+            string_base64_to_bytes(data["msg_b"]),
+            data["error"]
+            )
 
 class Client_To_AS:
     def __init__(self, user_id):
@@ -105,7 +109,7 @@ class Client_To_AS:
 class MsgC:
     def __init__(self, service : str, msgB : bytes):
         self.service = service
-        self.msg_b = bytes
+        self.msg_b = msgB
 
     def to_json(self):
         return json.dumps({
@@ -116,7 +120,7 @@ class MsgC:
     @classmethod
     def from_json(cls, json_str):
         data = json.loads(json_str)
-        return cls(string_base64_to_bytes(data["service"]), data["msgB"])
+        return cls(data["service"], string_base64_to_bytes(data["msgB"]))
 
 class MsgD: 
     def __init__(self, client_id:int, ttl:datetime):
@@ -138,22 +142,24 @@ class MsgD:
         return cls(data["client_id"],data["ttl"])    
 
 class Client_To_TGS:
-    def __init__(self, msg_c : MsgC, msg_d: bytes):
+    def __init__(self, msg_c : MsgC, msg_d: bytes, source:str = "client"):
         self.msg_c = msg_c
         self.msg_d = msg_d
-        self.source = "client"
+        self.source = source
 
     def to_json(self):
         return json.dumps({
-            "msg_c": self.msg_c,
+            "msg_c": self.msg_c.to_json(),
             "msg_d": bytes_to_string_base64(self.msg_d),
             "source": self.source,
         })
 
     @classmethod
-    def from_json(cls, json_str):
-        data = json.loads(json_str)
-        return cls(data["msg_c"], string_base64_to_bytes(data["msg_d"]), data["source"])
+    def from_json(cls, data):
+        msg_c = MsgC.from_json(data["msg_c"])
+        msg_d = string_base64_to_bytes(data["msg_d"])
+        source = data["source"]
+        return cls(msg_c, msg_d, source)
     
 class Msg_E: # Client-to-server ticket
     def __init__(self, client_server_key:bytes, client_id:int, address:any, ttl:datetime):
@@ -170,7 +176,7 @@ class Msg_E: # Client-to-server ticket
             "ttl": self.ttl
         }, default=custom_encoder)
     
-    def toBytes(self):
+    def to_bytes(self):
         return self.to_json().encode()
 
     @classmethod
@@ -187,7 +193,7 @@ class Msg_F:
             "client_server_key": bytes_to_string_base64(self.client_server_key)
         })
     
-    def toBytes(self):
+    def to_bytes(self):
         return self.to_json().encode()
     
     @classmethod
@@ -196,10 +202,10 @@ class Msg_F:
         return cls(string_base64_to_bytes(data["client_server_key"]))
     
 class TGS_To_Client:
-    def __init__(self, msg_e:bytes, msg_f:bytes):
+    def __init__(self, msg_e:bytes = b'', msg_f:bytes = b'', error:str = ""):
         self.msg_e = msg_e
         self.msg_f = msg_f
-        self.error = ""
+        self.error = error
 
     def to_json(self):
         return json.dumps({
@@ -272,9 +278,9 @@ class Msg_H:
     
 
 class SS_To_Client:
-    def __init__(self, msg_h:bytes):
+    def __init__(self, msg_h:bytes, error:str = ""):
         self.msg_h = msg_h
-        self.error = ""
+        self.error = error
 
     def to_json(self):
         return json.dumps({

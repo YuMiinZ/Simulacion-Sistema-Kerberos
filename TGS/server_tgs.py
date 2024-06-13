@@ -65,13 +65,13 @@ def handle_from_client(parsed_data, addr) -> str:
 
     msg_f = Msg_F(msg_e.client_server_key)
 
-    k_s = read_key("TGS/ss_private_key.key") # ahorita no está en el folder pero algo así seria    
+    k_s = read_key("TGS/K_S.key") # ahorita no está en el folder pero algo así seria    
 
-    msg_e_encrypted = rsa_encrypt_message(k_s, msg_e.to_bytes())
+    msg_e_encrypted = aes_encrypt_message(k_s, msg_e.to_bytes())
 
-    msg_encrypted = aes_encrypt_message(msg_b.client_tgs_key, msg_f.to_bytes())
+    msg_f_encrypted = aes_encrypt_message(msg_b.client_tgs_key, msg_f.to_bytes())
 
-    return TGS_To_Client(msg_e_encrypted, msg_encrypted).to_json()
+    return TGS_To_Client(msg_e_encrypted, msg_f_encrypted).to_json()
 
 def handle_client(conn, addr) -> str:
    
@@ -90,12 +90,14 @@ def handle_client(conn, addr) -> str:
             storage_key(secret_key)
             print("Llave secreta guardada en TGS\n\n")
 
-        elif parsed_data["source"] == 'TGS':  # Mensaje del cliente
+        elif parsed_data["source"] == 'client':  # Mensaje del cliente
             return handle_from_client(parsed_data, addr)
 
     except Exception as e:
         print(f"Error al procesar el mensaje: {e}")
-        return json.dumps({"error": str(e)})
+        error = TGS_To_Client()
+        error.error = f"from tgs : {e}"
+        return error.to_json()
 
 def start_server():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
