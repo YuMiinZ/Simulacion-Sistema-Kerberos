@@ -73,7 +73,7 @@ def start_server():
     while True:
         conn, addr = server.accept()
         print(f"Conexión establecida desde {addr}\n")
-        responseStr = handle_client(conn, addr)
+        responseStr = handle_client(conn)
         conn.sendall(responseStr.encode())
         conn.close()
 

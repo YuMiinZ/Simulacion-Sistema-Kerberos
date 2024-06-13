@@ -86,7 +86,7 @@ class Cliente:
 
         return Client_To_SS(msg_e_encrypted, msg_g_encrypted), msg_f, msg_g
     
-    def programa_5 (self, client_to_server: Client_To_SS, msg_f: Msg_F, msg_g: Msg_G) -> SS_To_Client :
+    def programa_5 (self, client_to_server: Client_To_SS,) -> SS_To_Client :
         response_from_server = self.send_to_server(self.servers["ss"], client_to_server.to_json())
 
         ss_to_client = SS_To_Client.from_json(response_from_server)
@@ -103,7 +103,7 @@ class Cliente:
         msg_h = Msg_H.from_json(msg_h_encrypted)
 
         # verifica que los ttl sean iguales
-        return msg_g.ttl != msg_h.ttl 
+        return msg_g.ttl == msg_h.ttl 
     
     def programa_7 (self, nombre_del_servicio : str) -> Response_Service:
         request_service = Request_Service(nombre_del_servicio)

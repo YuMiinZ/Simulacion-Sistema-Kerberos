@@ -241,10 +241,10 @@ class Msg_G:
     
 
 class Client_To_SS:
-    def __init__(self, msg_e: bytes, msg_g: bytes):
+    def __init__(self, msg_e: bytes, msg_g: bytes, source : str = "client"):
         self.msg_e = msg_e
         self.msg_g = msg_g
-        self.source = "client"
+        self.source = source
 
     def to_json(self):
         return json.dumps({
@@ -259,7 +259,7 @@ class Client_To_SS:
     
 
 class Msg_H:
-    def __init__ (self, ttl):
+    def __init__ (self, ttl:datetime):
         self.ttl = ttl
 
     def to_json(self):
@@ -277,7 +277,7 @@ class Msg_H:
     
 
 class SS_To_Client:
-    def __init__(self, msg_h:bytes, error:str = ""):
+    def __init__(self, msg_h:bytes = b'', error:str = ""):
         self.msg_h = msg_h
         self.error = error
 

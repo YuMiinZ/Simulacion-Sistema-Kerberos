@@ -22,7 +22,7 @@ while True :
 
         client_to_ss, msg_f, msg_g = cliente.programa_4(msg_a, tgs_to_client, nueva_fecha_hora)
 
-        ss_to_client = cliente.programa_5(client_to_ss, msg_f, msg_g)
+        ss_to_client = cliente.programa_5(client_to_ss)
 
         puede_confiar = cliente.programa_6(msg_g, msg_f, ss_to_client)
 
