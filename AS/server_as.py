@@ -51,6 +51,13 @@ def handle_from_client(parsed_data, addr) -> str:
 
     if not user_id in users:
         error = AS_To_Client()
+        error.error = "from as : Usuario no encontrado"
+        return error.to_json()
+    
+    user = users[user_id]
+
+    if not user["authorized"]:
+        error = AS_To_Client()
         error.error = "from as : Usuario no autorizado"
         return error.to_json()
     
