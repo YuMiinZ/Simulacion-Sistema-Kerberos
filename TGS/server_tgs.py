@@ -58,7 +58,9 @@ def handle_from_client(parsed_data) -> str:
     # comparar id client en mensaje B Y D
 
     if msg_b.client_id != msg_d.client_id:
-        return Error("ID de cliente no coincide en mensaje B y D").to_json()
+        tgs_to_client = TGS_To_Client()
+        tgs_to_client.error = "ID de cliente no coincide en mensaje B y D"
+        return tgs_to_client.to_json()
     # TODO : validar validity y ttl en c y d
     # !!! acá no sé de donde se extrae el client_id, addr y ttl
     msg_e = Msg_E(create_session_key(), msg_b.client_id, msg_b.address, msg_b.ttl) # TODO : crear un nuevo validity, NO TOMAR EL DE MSG B

@@ -10,8 +10,6 @@ while True :
 
         service_name = input("Ingrese el nombre del servicio: ")
 
-        password = input("Ingrese su contraseña: ")
-
         cliente = Cliente(user_id)
 
         as_to_client = cliente.programa_1(user_id)
@@ -29,11 +27,19 @@ while True :
         if not puede_confiar:
             raise Exception("No se puede confiar en el servidor de servicios")
         
-        resultado = cliente.programa_7(service_name)
+        permitir_servicios = True
+        while permitir_servicios :
+        
+            resultado = cliente.programa_7(service_name)
 
-        print(f"Resultado del servicio {service_name}: {resultado.resultado}")
-        # TODO : no terminar el ciclo
-        # TODO : permiter seguir solicitando servicios y que valide el ttl del request
+            print(f"Resultado del servicio {service_name}: {resultado.resultado}")
+            # TODO : no terminar el ciclo
+            # TODO : permiter seguir solicitando servicios y que valide el ttl del request
+
+            permitir_servicios = resultado.continuar
+
+            if permitir_servicios:
+                service_name = input("Ingrese el nombre del servicio: ")
 
     except Exception as e:
         print(f"Error al procesar el mensaje: {e}")

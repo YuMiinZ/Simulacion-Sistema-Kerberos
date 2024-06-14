@@ -13,20 +13,6 @@ def custom_encoder(obj):
         return obj.isoformat()
     raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
 
-class Error:
-    def __init__(self, error:str):
-        self.error = error
-
-    def to_json(self):
-        return json.dumps({
-            "error": self.error
-        })
-
-    @classmethod
-    def from_json(cls, json_str):
-        data = json.loads(json_str)
-        return cls(data["error"])
-
 class Msg_A:
     def __init__(self, client_tgs_key : bytes):
         self.client_tgs_key = client_tgs_key
@@ -351,17 +337,19 @@ class Request_Service:
         return cls(data["service"], data["source"])
     
 class Response_Service:
-    def __init__(self, resultado:str = "", error:str = ""):
+    def __init__(self, resultado:str = "", error:str = "", continuar:bool = True):
         self.resultado = resultado
         self.error = error
+        self.continuar = continuar
 
     def to_json(self):
         return json.dumps({
             "resultado": self.resultado,
-            "error": self.error
+            "error": self.error,
+            "continuar": self.continuar
         })
 
     @classmethod
     def from_json(cls, json_str):
         data = json.loads(json_str)
-        return cls(data["resultado"], data["error"])
+        return cls(data["resultado"], data["error"], data["continuar"])
