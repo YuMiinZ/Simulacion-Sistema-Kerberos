@@ -61,7 +61,7 @@ def handle_client(conn) -> str:
     except Exception as e:
         print(f"Error al procesar el mensaje: {e}")
         error = SS_To_Client()
-        error.error = f"from tgs : {e}"
+        error.error = f"desde ss : {e}"
         return error.to_json()
 
 def start_server():

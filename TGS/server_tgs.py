@@ -59,7 +59,7 @@ def handle_from_client(parsed_data) -> str:
 
     if msg_b.client_id != msg_d.client_id:
         tgs_to_client = TGS_To_Client()
-        tgs_to_client.error = "ID de cliente no coincide en mensaje B y D"
+        tgs_to_client.error = "desde tgs : ID de cliente no coincide en mensaje B y D"
         return tgs_to_client.to_json()
     # TODO : validar validity y ttl en c y d
     # !!! acá no sé de donde se extrae el client_id, addr y ttl
@@ -98,7 +98,7 @@ def handle_client(conn, addr) -> str:
     except Exception as e:
         print(f"Error al procesar el mensaje: {e}")
         error = TGS_To_Client()
-        error.error = f"from tgs : {e}"
+        error.error = f"desde tgs : {e}"
         return error.to_json()
 
 def start_server():

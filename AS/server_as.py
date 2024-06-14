@@ -51,14 +51,14 @@ def handle_from_client(parsed_data, addr) -> str:
 
     if not user_id in users:
         error = AS_To_Client()
-        error.error = "from as : Usuario no encontrado"
+        error.error = "desde as : Usuario no encontrado"
         return error.to_json()
     
     user = users[user_id]
 
     if not user["authorized"]:
         error = AS_To_Client()
-        error.error = "from as : Usuario no autorizado"
+        error.error = "desde as : Usuario no autorizado"
         return error.to_json()
     
     k_c = read_key("AS/K_C.key")
@@ -103,7 +103,7 @@ def handle_client(conn, addr):
 
     except Exception as e:
         error = AS_To_Client()
-        error.error = f"from as : {e}"
+        error.error = f"desde as : {e}"
         return error.to_json()
     
 def start_server():
