@@ -55,8 +55,9 @@ def send_key_to_sa(tgs_key_path, as_key_path):
         s.connect(server_address)
         tgs_to_ss = TGS_To_AS(encrypted_key)
         s.sendall(tgs_to_ss.to_bytes()) 
+        print(s.recv(1024).decode())
         print("Llave enviada al servidor SA desde TGS\n")
 
 
-generate_aes_keys("../TGS", "K_TGS")
-send_key_to_sa('../TGS/K_TGS.key', '../AS/as_public_key.pem')
+generate_aes_keys("TGS", "K_TGS")
+send_key_to_sa('TGS/K_TGS.key', 'AS/as_public_key.pem')

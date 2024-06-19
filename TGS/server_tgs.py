@@ -1,7 +1,8 @@
 import socket, os, json, datetime as dt
-from cryptography.hazmat.primitives import serialization, hashes
+from cryptography.hazmat.primitives.asymmetric.padding import OAEP, MGF1
+from cryptography.hazmat.primitives.serialization import load_pem_private_key
+from cryptography.hazmat.primitives.hashes import SHA256
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric import padding
 
 import sys
 sys.path.append('../Simulacion-Sistema-Kerberos')
@@ -10,9 +11,9 @@ from Utils.AES import *
 from Utils.utils import *
 
 def decrypt_key(message_data):
-    with open('./tgs_private_key.key', 'rb') as f:
+    with open('TGS/tgs_private_key.key', 'rb') as f:
         sa_private_key_data = f.read()
-        sa_private_key = serialization.load_pem_private_key(
+        sa_private_key = load_pem_private_key(
             sa_private_key_data,
             password=None,
             backend=default_backend()
@@ -20,9 +21,9 @@ def decrypt_key(message_data):
 
     decrypted_key = sa_private_key.decrypt(
         message_data,
-        padding.OAEP(
-            mgf=padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
+        OAEP(
+            mgf=MGF1(algorithm=SHA256()),
+            algorithm=SHA256(),
             label=None
         )
     )
@@ -31,7 +32,7 @@ def decrypt_key(message_data):
     return decrypted_key
 
 def storage_key(secret_key):
-    with open(os.path.join("./", f"K_TGS.key"), 'wb') as f:
+    with open("TGS/K_S.key", 'wb') as f:
         f.write(secret_key)
 
 def handle_from_client(parsed_data) -> str:
@@ -92,11 +93,13 @@ def handle_client(conn, addr) -> str:
 
         # TODO : adapt this
         if parsed_data["source"] == 'SS':  # Mensaje de clave del servidor SS
+            ss_to_tgs = SS_To_TGS.from_json(parsed_data)
 
             print("Recibido mensaje de clave del servidor SS")
-            secret_key = decrypt_key(parsed_data["encrypted_key"])
+            secret_key = decrypt_key(ss_to_tgs.encrypted_key)
             storage_key(secret_key)
             print("Llave secreta guardada en TGS\n\n")
+            return "llave secreta fue guardada en tgs\n"
 
         elif parsed_data["source"] == 'client':  # Mensaje del cliente
             return handle_from_client(parsed_data)

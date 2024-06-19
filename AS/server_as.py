@@ -1,7 +1,8 @@
 import socket, json
-from cryptography.hazmat.primitives import serialization, hashes
+from cryptography.hazmat.primitives.asymmetric.padding import OAEP, MGF1
+from cryptography.hazmat.primitives.serialization import load_pem_private_key
+from cryptography.hazmat.primitives.hashes import SHA256
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric import rsa, padding
 import sys
 sys.path.append('../Simulacion-Sistema-Kerberos')
 from DTOS.dtos import *
@@ -19,9 +20,9 @@ users = {
 
 # Función para desencriptar la llave secreta compartida recibida del TGS usando su propia llave privada
 def decrypt_key(message_data):
-    with open('./as_private_key.key', 'rb') as f: # Lectura de su propia llave privada
+    with open('AS/as_private_key.key', 'rb') as f: # Lectura de su propia llave privada
         sa_private_key_data = f.read()
-        sa_private_key = serialization.load_pem_private_key(
+        sa_private_key = load_pem_private_key(
             sa_private_key_data,
             password=None,
             backend=default_backend()
@@ -29,9 +30,9 @@ def decrypt_key(message_data):
 
     decrypted_key = sa_private_key.decrypt( # Desencripta usando su llave privada
         message_data,
-        padding.OAEP(
-            mgf=padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
+        OAEP(
+            mgf=MGF1(algorithm=SHA256()),
+            algorithm=SHA256(),
             label=None
         )
     )
@@ -41,11 +42,11 @@ def decrypt_key(message_data):
 
 
 def storage_key(secret_key):
-    with open("./K_TGS.key", 'wb') as f:
+    with open("AS/K_TGS.key", 'wb') as f:
         f.write(secret_key)
 
-def handle_from_client(parsed_data, addr) -> str:
 
+def handle_from_client(parsed_data, addr) -> str:
     user_id = parsed_data["user_id"]
 
     if not user_id in users:
@@ -90,10 +91,12 @@ def handle_client(conn, addr):
         parsed_data = json.loads(message_data_decoded)
 
         if parsed_data["source"] == 'TGS':  # Mensaje de clave del servidor TGS
+            tgs_to_as = TGS_To_AS.from_json(parsed_data)
             print("Recibido mensaje de clave del servidor TGS")
-            secret_key = decrypt_key(parsed_data["encrypted_key"])
+            secret_key = decrypt_key(tgs_to_as.encrypted_key)
             storage_key(secret_key)
             print("Llave secreta guardada en AS\n\n")
+            return "llave secreta fue guardada en AS\n"
             
         elif parsed_data["source"] == 'client':  # Mensaje del cliente
             return handle_from_client(parsed_data, addr)

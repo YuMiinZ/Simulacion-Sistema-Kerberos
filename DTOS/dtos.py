@@ -280,7 +280,7 @@ class SS_To_Client:
     
 
 class TGS_To_AS:
-    def __init__(self, encrypted_key:bytes, source:str = "SS"):
+    def __init__(self, encrypted_key:bytes, source:str = "TGS"):
         self.encrypted_key = encrypted_key
         self.source = source
 
@@ -295,8 +295,7 @@ class TGS_To_AS:
 
     @classmethod
     def from_json(cls, json_str):
-        data = json.loads(json_str)
-        return cls(string_base64_to_bytes(data["encrypted_key"]), data["source"])
+        return cls(string_base64_to_bytes(json_str["encrypted_key"]), json_str["source"])
     
 class SS_To_TGS:
     def __init__(self, encrypted_key:bytes, source:str = "SS"):
@@ -314,8 +313,7 @@ class SS_To_TGS:
 
     @classmethod
     def from_json(cls, json_str):
-        data = json.loads(json_str)
-        return cls(string_base64_to_bytes(data["encrypted_key"]), data["source"])
+        return cls(string_base64_to_bytes(json_str["encrypted_key"]), json_str["source"])
     
 class Request_Service:
     

@@ -4,7 +4,6 @@ Se puede eliminar o ajustar según sus necesidades...
 """
 
 import socket, datetime as dt
-from datetime import datetime
 import sys
 sys.path.append('../Simulacion-Sistema-Kerberos')
 from DTOS.dtos import *
