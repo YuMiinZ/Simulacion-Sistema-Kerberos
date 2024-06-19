@@ -1,4 +1,4 @@
-import socket, json, datetime as dt
+import socket, json
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
@@ -14,7 +14,6 @@ users = {
     },
     2 : {
         "authorized": False
-    
     }
 }
 
@@ -70,13 +69,11 @@ def handle_from_client(parsed_data, addr) -> str:
     msg_a_encrypted = aes_encrypt_message(k_c, msg_a.to_bytes())
 
     client_id  = 1 # ??? ¿de dónde sale este valor?
+    # el profe explico que es de una base de datos, pero en este caso se hardcodea
 
-    ahora = dt.datetime.now()
-    # esta hora que se suma agregarla a un configurable
-    diferencia = dt.timedelta(hours=1)
-    ttl = ahora + diferencia
+    validity = 5 # segundos
 
-    msg_b = Msg_B(client_tgs_key, client_id, addr, ttl)
+    msg_b = Msg_B(client_tgs_key, client_id, addr, validity)
 
     k_tgs = read_key("AS/K_TGS.key")
 

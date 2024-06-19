@@ -40,27 +40,23 @@ class Cliente:
         
         return as_to_client
     
-    def programa_2(self, as_to_client: AS_To_Client, service_name : str) -> Tuple[Client_To_TGS, datetime, Msg_A]:
+    def programa_2(self, as_to_client: AS_To_Client, service_name : str) -> Tuple[Client_To_TGS, Msg_A]:
          # acá utilizo el K_C.key para desencriptar la session key
         k_c = read_key("Client/K_C.key")
-        # TODO : hacer un ejemplo donde k_c del cliente y del AS sean diferentes
+       
         msg_a_decrypted = aes_decrypt_message(k_c, as_to_client.msg_a)
         msg_a = Msg_A.from_json(msg_a_decrypted)
 
         # ??? ¿qué se hace con el service_name?
-        msg_c = MsgC(service_name, as_to_client.msg_b)
+        # !!! el profe explico que e una implementación real el TGS se encargaría de verificar el service_name
+        # !!! y devolvería un error si el servicio no existe, puesto que son más configuraciones que se deben hacer
+        msg_c = Msg_C(service_name, as_to_client.msg_b)
 
-        ahora = dt.datetime.now()
-        # esta hora que se suma agregarla a un configurable
-        delta_una_hora = dt.timedelta(hours=1)
-        nueva_fecha_hora = ahora + delta_una_hora
-
-        # ??? ¿es correcto obtener el client_id de esta manera?
-        msg_d = MsgD(self.client_id, nueva_fecha_hora)
+        msg_d = Msg_D(self.client_id, dt.datetime.now())
 
         encrypted_message_d = aes_encrypt_message(msg_a.client_tgs_key, msg_d.to_bytes())
 
-        return Client_To_TGS(msg_c, encrypted_message_d), nueva_fecha_hora, msg_a
+        return Client_To_TGS(msg_c, encrypted_message_d), msg_a
     
     def programa_3(self, client_to_tgs: Client_To_TGS) -> TGS_To_Client:
         responseFromTGS = self.send_to_server(self.servers["tgs"], client_to_tgs.to_json())
@@ -72,16 +68,15 @@ class Cliente:
 
         return tgs_to_client
     
-    def programa_4 (self, msg_a: Msg_A, tgs_to_client: TGS_To_Client, nueva_fecha_hora: datetime) -> Tuple[Client_To_SS, Msg_F, Msg_G]:
+    def programa_4 (self, msg_a: Msg_A, tgs_to_client: TGS_To_Client) -> Tuple[Client_To_SS, Msg_F, Msg_G]:
         msg_f_decrypted = aes_decrypt_message(msg_a.client_tgs_key, tgs_to_client.msg_f)
 
         msg_f = Msg_F.from_json(msg_f_decrypted)
 
         msg_e_encrypted = tgs_to_client.msg_e
 
-        # ??? no estoy seguro de este nueva_fecha_hora, de donde voy tomando el ttl y el client_id?
         # no sé si se guarda en una base de datos
-        msg_g = Msg_G(self.client_id, nueva_fecha_hora)
+        msg_g = Msg_G(self.client_id, dt.datetime.now())
 
         msg_g_encrypted = aes_encrypt_message(msg_f.client_server_key, msg_g.to_bytes())
 
@@ -103,10 +98,7 @@ class Cliente:
 
         msg_h = Msg_H.from_json(msg_h_encrypted)
 
-        # verifica que los ttl sean iguales
-        # TODO: revisar porque g viene como datetime y h como stirng
-        h_datetime = datetime.strptime(msg_h.ttl, '%Y-%m-%dT%H:%M:%S.%f')
-        return msg_g.ttl == h_datetime
+        return msg_g.timestamp == msg_h.timestamp
     
     def programa_7 (self, nombre_del_servicio : str) -> Response_Service:
         request_service = Request_Service(nombre_del_servicio)

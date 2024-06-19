@@ -14,11 +14,11 @@ while True :
 
         as_to_client = cliente.programa_1(user_id)
 
-        client_to_tgs, nueva_fecha_hora, msg_a = cliente.programa_2(as_to_client, service_name)
+        client_to_tgs, msg_a = cliente.programa_2(as_to_client, service_name)
 
         tgs_to_client = cliente.programa_3(client_to_tgs)
 
-        client_to_ss, msg_f, msg_g = cliente.programa_4(msg_a, tgs_to_client, nueva_fecha_hora)
+        client_to_ss, msg_f, msg_g = cliente.programa_4(msg_a, tgs_to_client)
 
         ss_to_client = cliente.programa_5(client_to_ss)
 
@@ -27,19 +27,9 @@ while True :
         if not puede_confiar:
             raise Exception("No se puede confiar en el servidor de servicios")
         
-        permitir_servicios = True
-        while permitir_servicios :
-        
-            resultado = cliente.programa_7(service_name)
+        resultado = cliente.programa_7(service_name)
 
-            print(f"Resultado del servicio {service_name}: {resultado.resultado}")
-            # TODO : no terminar el ciclo
-            # TODO : permiter seguir solicitando servicios y que valide el ttl del request
-
-            permitir_servicios = resultado.continuar
-
-            if permitir_servicios:
-                service_name = input("Ingrese el nombre del servicio: ")
+        print(f"Resultado del servicio {service_name}: {resultado.resultado}")
 
     except Exception as e:
         print(f"Error al procesar el mensaje: {e}")

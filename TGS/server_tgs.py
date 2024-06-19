@@ -1,4 +1,4 @@
-import socket, os, json
+import socket, os, json, datetime as dt
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import padding
@@ -53,7 +53,7 @@ def handle_from_client(parsed_data) -> str:
 
     msg_d_decrypted = aes_decrypt_message(msg_b.client_tgs_key, client_to_tgs.msg_d)
 
-    msg_d = MsgD.from_json(msg_d_decrypted)
+    msg_d = Msg_D.from_json(msg_d_decrypted)
 
     # comparar id client en mensaje B Y D
 
@@ -61,9 +61,15 @@ def handle_from_client(parsed_data) -> str:
         tgs_to_client = TGS_To_Client()
         tgs_to_client.error = "desde tgs : ID de cliente no coincide en mensaje B y D"
         return tgs_to_client.to_json()
-    # TODO : validar validity y ttl en c y d
-    # !!! acá no sé de donde se extrae el client_id, addr y ttl
-    msg_e = Msg_E(create_session_key(), msg_b.client_id, msg_b.address, msg_b.ttl) # TODO : crear un nuevo validity, NO TOMAR EL DE MSG B
+    
+    if not ( dt.datetime.now() - msg_d.timestamp ) < dt.timedelta(seconds=msg_b.validity):
+        tgs_to_client = TGS_To_Client()
+        tgs_to_client.error = "desde tgs : Mensaje D expirado"
+        return tgs_to_client.to_json()
+
+    validity = 5 # 5 seconds
+
+    msg_e = Msg_E(create_session_key(), msg_b.client_id, msg_b.address, validity)
 
     msg_f = Msg_F(msg_e.client_server_key)
 

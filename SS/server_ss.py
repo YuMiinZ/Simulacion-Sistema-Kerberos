@@ -1,4 +1,4 @@
-import socket, sys
+import socket, sys, datetime as dt, time
 sys.path.append('../Simulacion-Sistema-Kerberos')
 from DTOS.dtos import *
 from Utils.AES import *
@@ -16,7 +16,7 @@ def handle_from_client(parsed_data) -> str:
     msg_e = Msg_E.from_json(msg_e_decrypted)
 
     msg_g_encrypted = client_to_ss.msg_g
-    # TODO : validar validity y ttl en g y e
+
     msg_g_decrypted = aes_decrypt_message(msg_e.client_server_key, msg_g_encrypted)
 
     msg_g = Msg_G.from_json(msg_g_decrypted)
@@ -25,11 +25,17 @@ def handle_from_client(parsed_data) -> str:
         ss_to_client = SS_To_Client()
         ss_to_client.error = "ID de cliente no coincide en mensaje G y E"
         return ss_to_client.to_json()
+
+    if not ( dt.datetime.now() - msg_g.timestamp )  < dt.timedelta(seconds=msg_e.validity):
+        ss_to_client = SS_To_Client()
+        ss_to_client.error = "desde ss : Mensaje g expirado"
+        return ss_to_client.to_json()
     
-    msg_h = Msg_H(msg_g.ttl)
+    msg_h = Msg_H(msg_g.timestamp) 
 
     msg_h_encrypted = aes_encrypt_message(msg_e.client_server_key, msg_h.to_bytes())
-    # TODO : print for handshake, msg_e
+
+    print (f"Handshake con {msg_e.client_id} exitoso\n\n")
     return SS_To_Client(msg_h_encrypted).to_json()
 
 def handle_service(parsed_data) -> str:
