@@ -1,0 +1,353 @@
+import json, base64
+from datetime import datetime
+
+def bytes_to_string_base64(bytes:bytes) -> str:
+    bytes_base64 = base64.b64encode(bytes)
+    return bytes_base64.decode('utf-8')
+
+def string_base64_to_bytes(string:str) -> bytes:
+    return base64.b64decode(string.encode('utf-8'))
+
+def custom_encoder(obj):
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
+
+class Msg_A:
+    def __init__(self, client_tgs_key : bytes):
+        self.client_tgs_key = client_tgs_key
+
+    def to_json(self):
+        return json.dumps({
+            "client_tgs_key": bytes_to_string_base64(self.client_tgs_key)
+        })
+    
+    def to_bytes(self):
+        return self.to_json().encode()
+
+    @classmethod
+    def from_json(cls, json_str):
+        data = json.loads(json_str)
+        return cls(string_base64_to_bytes(data["client_tgs_key"]))
+
+class Msg_B:
+    def __init__(self, client_tgs_key:bytes, client_id:int, address:any, validity:int):
+        self.client_tgs_key = client_tgs_key
+        self.client_id = client_id
+        self.address = address
+        self.validity = validity
+
+    def to_json(self):
+        return json.dumps({
+            "client_tgs_key": bytes_to_string_base64(self.client_tgs_key),
+            "client_id": self.client_id,
+            "address": self.address,
+            "validity": self.validity
+        })
+
+    def to_bytes(self):
+        return self.to_json().encode()
+    
+    @classmethod
+    def from_json(cls, json_str):
+        data = json.loads(json_str)
+        return cls(string_base64_to_bytes(data["client_tgs_key"]), data["client_id"], data["address"], data["validity"])
+    
+
+class AS_To_Client:
+    def __init__(self, msg_a:bytes = b'', msg_b:bytes = b'', error:str = ""):
+        self.msg_a = msg_a
+        self.msg_b = msg_b
+        self.error = error
+
+    def to_json(self):
+        return json.dumps({
+            "msg_a": bytes_to_string_base64(self.msg_a),
+            "msg_b": bytes_to_string_base64(self.msg_b),
+            "error": self.error
+        })
+
+    @classmethod
+    def from_json(cls, json_str):
+        data = json.loads(json_str)
+        return cls(
+            string_base64_to_bytes(data["msg_a"]),
+            string_base64_to_bytes(data["msg_b"]),
+            data["error"]
+            )
+
+class Client_To_AS:
+    def __init__(self, user_id):
+        self.user_id = user_id
+        self.source = "client"
+
+    def to_json(self) -> str:
+        return json.dumps({
+            "user_id": self.user_id,
+            "source": self.source
+        })
+
+    @classmethod
+    def from_json(cls, json_str):
+        data = json.loads(json_str)
+        return cls(data["user_id"], data["source"])
+
+class Msg_C:
+    def __init__(self, service : str, msgB : bytes):
+        self.service = service
+        self.msg_b = msgB
+
+    def to_json(self):
+        return json.dumps({
+            "service": self.service,
+            "msgB": bytes_to_string_base64(self.msg_b)
+        })
+
+    @classmethod
+    def from_json(cls, json_str):
+        data = json.loads(json_str)
+        return cls(data["service"], string_base64_to_bytes(data["msgB"]))
+
+class Msg_D: 
+    def __init__(self, client_id:int, timestamp:datetime):
+        self.client_id = client_id
+        self.timestamp = timestamp
+
+    def to_json(self):
+        return json.dumps({
+            "client_id": self.client_id,
+            "timestamp": self.timestamp
+        }, default=custom_encoder)
+    
+    def to_bytes(self):
+        return self.to_json().encode()
+
+    @classmethod
+    def from_json(cls, json_str):
+        data = json.loads(json_str)
+        return cls(data["client_id"], datetime.fromisoformat(data["timestamp"]))    
+
+class Client_To_TGS:
+    def __init__(self, msg_c : Msg_C, msg_d: bytes, source:str = "client"):
+        self.msg_c = msg_c
+        self.msg_d = msg_d
+        self.source = source
+
+    def to_json(self):
+        return json.dumps({
+            "msg_c": self.msg_c.to_json(),
+            "msg_d": bytes_to_string_base64(self.msg_d),
+            "source": self.source,
+        })
+
+    @classmethod
+    def from_json(cls, data):
+        msg_c = Msg_C.from_json(data["msg_c"])
+        msg_d = string_base64_to_bytes(data["msg_d"])
+        source = data["source"]
+        return cls(msg_c, msg_d, source)
+    
+class Msg_E: # Client-to-server ticket
+    def __init__(self, client_server_key:bytes, client_id:int, address:any, validity:int):
+        self.client_server_key = client_server_key
+        self.client_id = client_id
+        self.address = address
+        self.validity = validity
+
+    def to_json(self):
+        return json.dumps({
+            "client_server_key": bytes_to_string_base64(self.client_server_key),
+            "client_id": self.client_id,
+            "address": self.address,
+            "validity": self.validity
+        })
+    
+    def to_bytes(self):
+        return self.to_json().encode()
+
+    @classmethod
+    def from_json(cls, json_str):
+        data = json.loads(json_str)
+        return cls(string_base64_to_bytes(data["client_server_key"]), data["client_id"], data["address"], data["validity"])
+    
+class Msg_F:
+    def __init__(self, client_server_key:bytes):
+        self.client_server_key = client_server_key
+
+    def to_json(self):
+        return json.dumps({
+            "client_server_key": bytes_to_string_base64(self.client_server_key)
+        })
+    
+    def to_bytes(self):
+        return self.to_json().encode()
+    
+    @classmethod
+    def from_json(cls, json_str):
+        data = json.loads(json_str)
+        return cls(string_base64_to_bytes(data["client_server_key"]))
+    
+class TGS_To_Client:
+    def __init__(self, msg_e:bytes = b'', msg_f:bytes = b'', error:str = ""):
+        self.msg_e = msg_e
+        self.msg_f = msg_f
+        self.error = error
+
+    def to_json(self):
+        return json.dumps({
+            "msg_e": bytes_to_string_base64(self.msg_e),
+            "msg_f": bytes_to_string_base64(self.msg_f),
+            "error": self.error
+        })
+
+    @classmethod
+    def from_json(cls, json_str):
+        data = json.loads(json_str)
+        return cls(string_base64_to_bytes(data["msg_e"]), string_base64_to_bytes(data["msg_f"]), data["error"])
+    
+
+class Msg_G:
+    def __init__(self, client_id:int, timestamp:datetime):
+        self.client_id = client_id
+        self.timestamp = timestamp
+
+    def to_json(self):
+        return json.dumps({
+            "client_id": self.client_id,
+            "timestamp": self.timestamp
+        }, default=custom_encoder)
+    
+    def to_bytes(self):
+        return self.to_json().encode()
+
+    @classmethod
+    def from_json(cls, json_str):
+        data = json.loads(json_str)
+        return cls(data["client_id"], datetime.fromisoformat(data["timestamp"]))    
+    
+
+class Client_To_SS:
+    def __init__(self, msg_e: bytes, msg_g: bytes, source : str = "client"):
+        self.msg_e = msg_e
+        self.msg_g = msg_g
+        self.source = source
+
+    def to_json(self):
+        return json.dumps({
+            "msg_e": bytes_to_string_base64(self.msg_e),
+            "msg_g": bytes_to_string_base64(self.msg_g),
+            "source": self.source
+        })
+    
+    @classmethod
+    def from_json(cls, data):
+        return cls(string_base64_to_bytes(data["msg_e"]), string_base64_to_bytes(data["msg_g"]), data["source"])
+    
+
+class Msg_H:
+    def __init__ (self, timestamp:datetime):
+        self.timestamp = timestamp
+
+    def to_json(self):
+        return json.dumps({
+            "timestamp": self.timestamp
+        }, default=custom_encoder)
+    
+    def to_bytes(self):
+        return self.to_json().encode()
+    
+    @classmethod
+    def from_json(cls, json_str):
+        data = json.loads(json_str)
+        return cls(datetime.fromisoformat(data["timestamp"]))
+    
+
+class SS_To_Client:
+    def __init__(self, msg_h:bytes = b'', error:str = ""):
+        self.msg_h = msg_h
+        self.error = error
+
+    def to_json(self):
+        return json.dumps({
+            "msg_h": bytes_to_string_base64(self.msg_h),
+            "error": self.error
+        })
+
+    @classmethod
+    def from_json(cls, json_str):
+        data = json.loads(json_str)
+        return cls(string_base64_to_bytes(data["msg_h"]), data["error"])
+    
+
+class TGS_To_AS:
+    def __init__(self, encrypted_key:bytes, source:str = "TGS"):
+        self.encrypted_key = encrypted_key
+        self.source = source
+
+    def to_json(self):
+        return json.dumps({
+            "encrypted_key": bytes_to_string_base64(self.encrypted_key),
+            "source": self.source
+        })
+    
+    def to_bytes(self):
+        return self.to_json().encode()
+
+    @classmethod
+    def from_json(cls, json_str):
+        return cls(string_base64_to_bytes(json_str["encrypted_key"]), json_str["source"])
+    
+class SS_To_TGS:
+    def __init__(self, encrypted_key:bytes, source:str = "SS"):
+        self.encrypted_key = encrypted_key
+        self.source = source
+
+    def to_json(self):
+        return json.dumps({
+            "encrypted_key": bytes_to_string_base64(self.encrypted_key),
+            "source": self.source
+        })
+    
+    def to_bytes(self):
+        return self.to_json().encode()
+
+    @classmethod
+    def from_json(cls, json_str):
+        return cls(string_base64_to_bytes(json_str["encrypted_key"]), json_str["source"])
+    
+class Request_Service:
+    
+    def __init__(self, service:str, source:str = "servicio"):
+        self.service = service
+        self.source = source
+
+    def to_json(self):
+        return json.dumps({
+            "service": self.service,
+            "source": self.source,
+        })
+    
+    def to_bytes(self):
+        return self.to_json().encode()
+
+    @classmethod
+    def from_json(cls, data):
+        return cls(data["service"], data["source"])
+    
+class Response_Service:
+    def __init__(self, resultado:str = "", error:str = "", continuar:bool = True):
+        self.resultado = resultado
+        self.error = error
+        self.continuar = continuar
+
+    def to_json(self):
+        return json.dumps({
+            "resultado": self.resultado,
+            "error": self.error,
+            "continuar": self.continuar
+        })
+
+    @classmethod
+    def from_json(cls, json_str):
+        data = json.loads(json_str)
+        return cls(data["resultado"], data["error"], data["continuar"])

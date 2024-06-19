@@ -1,13 +1,19 @@
-import socket
-from cryptography.hazmat.primitives import serialization, hashes
+import socket, os, json, datetime as dt
+from cryptography.hazmat.primitives.asymmetric.padding import OAEP, MGF1
+from cryptography.hazmat.primitives.serialization import load_pem_private_key
+from cryptography.hazmat.primitives.hashes import SHA256
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric import rsa, padding
-import os
+
+import sys
+sys.path.append('../Simulacion-Sistema-Kerberos')
+from DTOS.dtos import *
+from Utils.AES import *
+from Utils.utils import *
 
 def decrypt_key(message_data):
-    with open('./tgs_private_key.key', 'rb') as f:
+    with open('TGS/tgs_private_key.key', 'rb') as f:
         sa_private_key_data = f.read()
-        sa_private_key = serialization.load_pem_private_key(
+        sa_private_key = load_pem_private_key(
             sa_private_key_data,
             password=None,
             backend=default_backend()
@@ -15,9 +21,9 @@ def decrypt_key(message_data):
 
     decrypted_key = sa_private_key.decrypt(
         message_data,
-        padding.OAEP(
-            mgf=padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
+        OAEP(
+            mgf=MGF1(algorithm=SHA256()),
+            algorithm=SHA256(),
             label=None
         )
     )
@@ -26,24 +32,83 @@ def decrypt_key(message_data):
     return decrypted_key
 
 def storage_key(secret_key):
-    with open(os.path.join("./", f"K_TGS.key"), 'wb') as f:
+    with open("TGS/K_S.key", 'wb') as f:
         f.write(secret_key)
 
+def handle_from_client(parsed_data) -> str:
+    print("Recibido mensaje del cliente:", parsed_data)
 
-def handle_client(conn):
-    with conn:
-        message_type = conn.recv(1)  # Leer el primer byte para determinar el tipo de mensaje
+    client_to_tgs = Client_To_TGS.from_json(parsed_data)
+
+    msg_b_encrypted = client_to_tgs.msg_c.msg_b
+
+    k_tgs = read_key("TGS/K_TGS.key")
+
+    # Desencriptar el mensaje B
+
+    msg_b_decrypted = aes_decrypt_message(k_tgs, msg_b_encrypted)
+
+    msg_b = Msg_B.from_json(msg_b_decrypted)
+
+    # con msg_b.client_tgs_key desencripto el mensaje d
+
+    msg_d_decrypted = aes_decrypt_message(msg_b.client_tgs_key, client_to_tgs.msg_d)
+
+    msg_d = Msg_D.from_json(msg_d_decrypted)
+
+    # comparar id client en mensaje B Y D
+
+    if msg_b.client_id != msg_d.client_id:
+        tgs_to_client = TGS_To_Client()
+        tgs_to_client.error = "desde tgs : ID de cliente no coincide en mensaje B y D"
+        return tgs_to_client.to_json()
+    
+    if not ( dt.datetime.now() - msg_d.timestamp ) < dt.timedelta(seconds=msg_b.validity):
+        tgs_to_client = TGS_To_Client()
+        tgs_to_client.error = "desde tgs : Mensaje D expirado"
+        return tgs_to_client.to_json()
+
+    validity = 5 # 5 seconds
+
+    msg_e = Msg_E(create_session_key(), msg_b.client_id, msg_b.address, validity)
+
+    msg_f = Msg_F(msg_e.client_server_key)
+
+    k_s = read_key("TGS/K_S.key") # ahorita no está en el folder pero algo así seria    
+
+    msg_e_encrypted = aes_encrypt_message(k_s, msg_e.to_bytes())
+
+    msg_f_encrypted = aes_encrypt_message(msg_b.client_tgs_key, msg_f.to_bytes())
+
+    return TGS_To_Client(msg_e_encrypted, msg_f_encrypted).to_json()
+
+def handle_client(conn, addr) -> str:
+   
+    try:
+
         message_data = conn.recv(4096)
+        message_data_decoded = message_data.decode()
+        # convierte el json a un diccionario
+        parsed_data = json.loads(message_data_decoded)
 
-    if message_type == b'K':  # Mensaje de clave del servidor SS
+        # TODO : adapt this
+        if parsed_data["source"] == 'SS':  # Mensaje de clave del servidor SS
+            ss_to_tgs = SS_To_TGS.from_json(parsed_data)
 
-        print("Recibido mensaje de clave del servidor SS")
-        secret_key = decrypt_key(message_data)
-        storage_key(secret_key)
-        print("Llave secreta guardada en TGS\n\n")
+            print("Recibido mensaje de clave del servidor SS")
+            secret_key = decrypt_key(ss_to_tgs.encrypted_key)
+            storage_key(secret_key)
+            print("Llave secreta guardada en TGS\n\n")
+            return "llave secreta fue guardada en tgs\n"
 
-    elif message_type == b'C':  # Mensaje del cliente
-        print("Recibido mensaje del cliente:", message_data.decode())
+        elif parsed_data["source"] == 'client':  # Mensaje del cliente
+            return handle_from_client(parsed_data)
+
+    except Exception as e:
+        print(f"Error al procesar el mensaje: {e}")
+        error = TGS_To_Client()
+        error.error = f"desde tgs : {e}"
+        return error.to_json()
 
 def start_server():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -54,7 +119,8 @@ def start_server():
     while True:
         conn, addr = server.accept()
         print(f"Conexión establecida desde {addr}")
-        handle_client(conn)
+        responseStr = handle_client(conn, addr)
+        conn.sendall(responseStr.encode())
         conn.close()
 
 if __name__ == "__main__":

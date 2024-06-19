@@ -1,8 +1,9 @@
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives import serialization, hashes
-import socket
-import os
+import socket, os, sys
+sys.path.append('../Simulacion-Sistema-Kerberos')
+from DTOS.dtos import *
 
 # Función encargada de generar la llave secreta
 def generate_aes_keys(directory, name):
@@ -52,9 +53,11 @@ def send_key_to_tgs(tgs_key_path, as_key_path):
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect(server_address)
-        s.sendall(b'K' + encrypted_key)
+        ss_to_tgs = SS_To_TGS(encrypted_key)
+        s.sendall(ss_to_tgs.to_bytes())
+        print(s.recv(1024).decode())
         print("Llave enviada al servidor TGS desde SS\n")
 
 
-generate_aes_keys("../SS", "K_S")
-send_key_to_tgs('../SS/K_S.key', '../TGS/tgs_public_key.pem')
+generate_aes_keys("SS", "K_S")
+send_key_to_tgs('SS/K_S.key', 'TGS/tgs_public_key.pem')

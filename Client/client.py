@@ -3,57 +3,110 @@ Este es un ejemplo de uso para encriptar y desencriptar mensajes usando la llave
 Se puede eliminar o ajustar según sus necesidades...
 """
 
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives import padding
-from cryptography.hazmat.backends import default_backend
-import os
+import socket, datetime as dt
+import sys
+sys.path.append('../Simulacion-Sistema-Kerberos')
+from DTOS.dtos import *
+from Utils.AES import *
+from Utils.utils import *
+from typing import Tuple
 
-# Función para cifrar un mensaje
-def encrypt_message(key, message):
-    iv = os.urandom(16)  # Generar un vector de inicialización (IV) aleatorio
-    cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend()) 
-    encryptor = cipher.encryptor()
+class Cliente:
+    def __init__(self, cliente_id:int, ):
+        self.client_id = cliente_id
+        self.servers = {
+            "as": ('localhost', 8000),
+            "tgs": ('localhost', 8001),
+            "ss": ('localhost', 8002)
+        }
+
+    def send_to_server(self, server_address, message:str):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
+            client_socket.connect(server_address)
+            client_socket.sendall(message.encode())
+            response = client_socket.recv(1024)
+            return response.decode()
+        
+    def programa_1(self, user_id:int) -> AS_To_Client:
+        # crea el primer mensaje hacia el AS
+        client_to_as = Client_To_AS(user_id)
+        # lo envía al servidor AS
+        response_from_as = self.send_to_server(self.servers["as"], client_to_as.to_json())
+        # parsea el response
+        as_to_client = AS_To_Client.from_json(response_from_as)
+        if as_to_client.error:
+            raise Exception(as_to_client.error)
+        
+        return as_to_client
     
-    # Añadir padding al mensaje para que su longitud sea múltiplo de 16 bytes
-    padder = padding.PKCS7(algorithms.AES.block_size).padder()
-    padded_message = padder.update(message) + padder.finalize()
+    def programa_2(self, as_to_client: AS_To_Client, service_name : str) -> Tuple[Client_To_TGS, Msg_A]:
+         # acá utilizo el K_C.key para desencriptar la session key
+        k_c = read_key("Client/K_C.key")
+       
+        msg_a_decrypted = aes_decrypt_message(k_c, as_to_client.msg_a)
+        msg_a = Msg_A.from_json(msg_a_decrypted)
+
+        # ??? ¿qué se hace con el service_name?
+        # !!! el profe explico que e una implementación real el TGS se encargaría de verificar el service_name
+        # !!! y devolvería un error si el servicio no existe, puesto que son más configuraciones que se deben hacer
+        msg_c = Msg_C(service_name, as_to_client.msg_b)
+
+        msg_d = Msg_D(self.client_id, dt.datetime.now())
+
+        encrypted_message_d = aes_encrypt_message(msg_a.client_tgs_key, msg_d.to_bytes())
+
+        return Client_To_TGS(msg_c, encrypted_message_d), msg_a
     
-    # Cifrar el mensaje
-    encrypted_message = encryptor.update(padded_message) + encryptor.finalize()
-    return iv + encrypted_message  # Concatenar IV y mensaje cifrado
+    def programa_3(self, client_to_tgs: Client_To_TGS) -> TGS_To_Client:
+        responseFromTGS = self.send_to_server(self.servers["tgs"], client_to_tgs.to_json())
 
-# Función para descifrar un mensaje
-def decrypt_message(key, encrypted_message):
-    iv = encrypted_message[:16]  # Extraer el IV del inicio del mensaje cifrado
-    encrypted_message = encrypted_message[16:]  # El resto es el mensaje cifrado
+        tgs_to_client = TGS_To_Client.from_json(responseFromTGS)
+
+        if tgs_to_client.error:
+            raise Exception(tgs_to_client.error)
+
+        return tgs_to_client
     
-    cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
-    decryptor = cipher.decryptor()
+    def programa_4 (self, msg_a: Msg_A, tgs_to_client: TGS_To_Client) -> Tuple[Client_To_SS, Msg_F, Msg_G]:
+        msg_f_decrypted = aes_decrypt_message(msg_a.client_tgs_key, tgs_to_client.msg_f)
+
+        msg_f = Msg_F.from_json(msg_f_decrypted)
+
+        msg_e_encrypted = tgs_to_client.msg_e
+
+        # no sé si se guarda en una base de datos
+        msg_g = Msg_G(self.client_id, dt.datetime.now())
+
+        msg_g_encrypted = aes_encrypt_message(msg_f.client_server_key, msg_g.to_bytes())
+
+        return Client_To_SS(msg_e_encrypted, msg_g_encrypted), msg_f, msg_g
     
-    # Descifrar el mensaje
-    padded_message = decryptor.update(encrypted_message) + decryptor.finalize()
+    def programa_5 (self, client_to_server: Client_To_SS,) -> SS_To_Client :
+        response_from_server = self.send_to_server(self.servers["ss"], client_to_server.to_json())
+
+        ss_to_client = SS_To_Client.from_json(response_from_server)
+
+        if ss_to_client.error:
+            raise Exception(ss_to_client.error)
+        
+        return ss_to_client
     
-    # Eliminar el padding
-    unpadder = padding.PKCS7(algorithms.AES.block_size).unpadder()
-    message = unpadder.update(padded_message) + unpadder.finalize()
-    return message
+    def programa_6 (self, msg_g: Msg_G, msg_f: Msg_F, ss_to_client : SS_To_Client) -> bool:
 
-def read_client_key(directory):
-    with open(directory, 'rb') as file:
-        key = file.read()
-    return key
+        msg_h_encrypted = aes_decrypt_message(msg_f.client_server_key, ss_to_client.msg_h)
 
+        msg_h = Msg_H.from_json(msg_h_encrypted)
 
-client_key = read_client_key("./K_C.key")
-client_key_AS = read_client_key("../AS/K_C.key")
+        return msg_g.timestamp == msg_h.timestamp
+    
+    def programa_7 (self, nombre_del_servicio : str) -> Response_Service:
+        request_service = Request_Service(nombre_del_servicio)
 
-# Mensaje a cifrar
-message = b"hola"
+        response_from_server = self.send_to_server(self.servers["ss"], request_service.to_json())
 
-# Cifrar el mensaje
-encrypted_message = encrypt_message(client_key, message)
-print("\nMensaje cifrado:", encrypted_message)
+        response_service = Response_Service.from_json(response_from_server)
 
-# Descifrar el mensaje con la llave que tiene AS que debería ser el mismo que el del cliente
-decrypted_message = decrypt_message(client_key_AS, encrypted_message)
-print("Mensaje descifrado:", decrypted_message.decode(), "\n")
+        if response_service.error:
+            raise Exception(response_service.error)
+        
+        return response_service
